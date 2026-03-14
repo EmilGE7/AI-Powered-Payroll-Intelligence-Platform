@@ -42,33 +42,27 @@ def dashboard():
     # Gather high level metrics
     total_employees = Employee.query.filter_by(is_active=True).count()
     
-    # Machine Learning and Analytics Pipeline
-    df = PayrollAnalyticsEngine.get_payroll_dataframe()
-    
-    next_month_cost = PayrollAnalyticsEngine.predict_next_month_cost(df)
-    anomalies = PayrollAnalyticsEngine.detect_salary_anomalies(df)
-    dept_costs = PayrollAnalyticsEngine.get_department_cost_distribution(df)
-    trend = PayrollAnalyticsEngine.get_monthly_trend(df)
+    # Pure DBMS Analytics Pipeline
+    next_month_cost = PayrollAnalyticsEngine.predict_next_month_cost()
+    anomalies = PayrollAnalyticsEngine.detect_salary_anomalies()
+    dept_costs = PayrollAnalyticsEngine.get_department_cost_distribution()
+    trend = PayrollAnalyticsEngine.get_monthly_trend()
 
-    latest_payroll_count = 0
+    latest_dist = PayrollAnalyticsEngine.get_latest_payroll_distribution()
+    latest_payroll_count = len(latest_dist)
     heatmap_json = "{}"
-    if not df.empty:
-        latest_year = df['year'].max()
-        latest_month = df[df['year'] == latest_year]['month'].max()
-        latest_df = df[(df['year'] == latest_year) & (df['month'] == latest_month)]
-        latest_payroll_count = len(latest_df)
-        
-        # Heatmap / Scatter Data
-        dept_mapping = {name: i for i, name in enumerate(latest_df['dept_name'].unique())}
+    if latest_dist:
+        unique_depts = list(set([row['dept_name'] for row in latest_dist]))
+        dept_mapping = {name: i for i, name in enumerate(unique_depts)}
         heatmap_data = []
-        for _, row in latest_df.iterrows():
+        for row in latest_dist:
             heatmap_data.append({
                 'x': float(dept_mapping[row['dept_name']]),
                 'y': float(row['net_salary']),
                 'name': row['employee_name'],
                 'dept': row['dept_name']
             })
-        heatmap_json = json.dumps({'data': heatmap_data, 'labels': list(dept_mapping.keys())})
+        heatmap_json = json.dumps({'data': heatmap_data, 'labels': unique_depts})
 
     return render_template('dashboard.html', 
                          title='Analytics Dashboard',
@@ -83,9 +77,38 @@ def dashboard():
 @main_bp.route('/export/csv')
 @login_required
 def export_csv():
-    df = PayrollAnalyticsEngine.get_payroll_dataframe()
+    import csv
+    import io
+    from sqlalchemy import text
+    
+    sql = text("""
+    SELECT 
+        p.payroll_id, 
+        e.name as employee_name, 
+        d.dept_name, 
+        p.month, 
+        p.year, 
+        p.base_salary, 
+        p.bonus, 
+        p.overtime_pay, 
+        p.tax, 
+        p.deductions, 
+        p.net_salary
+    FROM payroll p
+    JOIN employees e ON p.emp_id = e.emp_id
+    JOIN departments d ON e.department_id = d.dept_id
+    ORDER BY p.year DESC, p.month DESC
+    """)
+    result = db.session.execute(sql)
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(result.keys())
+    for row in result:
+        writer.writerow(row)
+        
     return Response(
-        df.to_csv(index=False),
+        output.getvalue(),
         mimetype="text/csv",
         headers={"Content-disposition": "attachment; filename=payroll_export.csv"}
     )
@@ -96,6 +119,50 @@ def employees():
     emps = Employee.query.filter_by(is_active=True).all()
     depts = Department.query.all()
     return render_template('employees.html', title='Manage Employees', employees=emps, depts=depts)
+
+@main_bp.route('/employee/<int:emp_id>')
+@login_required
+def employee_details(emp_id):
+    if current_user.role not in ['Admin', 'HR', 'Finance']:
+        flash('Access Denied.', 'danger')
+        return redirect(url_for('main.dashboard'))
+        
+    emp = Employee.query.get_or_404(emp_id)
+    dept = Department.query.get(emp.department_id)
+    dossier = PayrollAnalyticsEngine.generate_employee_dossier(emp_id)
+    
+    payrolls = Payroll.query.filter_by(emp_id=emp_id).order_by(Payroll.year.desc(), Payroll.month.desc()).all()
+    
+    return render_template('employee_details.html', title=f"Employee: {emp.name}", employee=emp, department=dept, dossier=dossier, payrolls=payrolls)
+
+@main_bp.route('/employee/<int:emp_id>/adjust', methods=['POST'])
+@login_required
+def adjust_employee_pay(emp_id):
+    if current_user.role not in ['Admin', 'HR', 'Finance']:
+        flash('Access Denied.', 'danger')
+        return redirect(url_for('main.dashboard'))
+        
+    emp = Employee.query.get_or_404(emp_id)
+    
+    new_base = request.form.get('new_base_salary')
+    pending_bonus = request.form.get('pending_bonus')
+    pending_deduction = request.form.get('pending_deduction')
+    
+    if new_base:
+        emp.base_salary = float(new_base)
+    if pending_bonus:
+        emp.pending_bonus = float(pending_bonus)
+    else:
+        emp.pending_bonus = 0.0
+        
+    if pending_deduction:
+        emp.pending_deduction = float(pending_deduction)
+    else:
+        emp.pending_deduction = 0.0
+        
+    db.session.commit()
+    flash(f"Payment logic updated for {emp.name}.", "success")
+    return redirect(url_for('main.employee_details', emp_id=emp_id))
 
 @main_bp.route('/employees/add', methods=['POST'])
 @login_required
@@ -152,20 +219,30 @@ def trigger_payroll():
     emps = Employee.query.filter_by(is_active=True).all()
     for emp in emps:
         base = emp.base_salary
+        bonus = emp.pending_bonus or 0.0
+        applied_deductions = emp.pending_deduction or 0.0
+
         tax = float(base) * 0.20 # simple tax calculation
-        deductions = float(base) * 0.05
-        net = float(base) - tax - deductions
+        total_deductions = (float(base) * 0.05) + float(applied_deductions)
+        net = float(base) + float(bonus) - tax - total_deductions
+        
         pr = Payroll(
             emp_id=emp.emp_id,
             month=month,
             year=year,
             base_salary=base,
+            bonus=bonus,
             tax=tax,
-            deductions=deductions,
+            deductions=total_deductions,
             net_salary=net,
             status='Pending'
         )
         db.session.add(pr)
+
+        # Reset pending adjustments after applying them
+        emp.pending_bonus = 0.0
+        emp.pending_deduction = 0.0
+        
     db.session.commit()
     
     flash(f'Payroll Engine generated {len(emps)} slips for {month}/{year}. Sent to Approvals Inbox.', 'success')
@@ -273,30 +350,25 @@ def generate_company_audit():
         flash("Access Denied.", "danger")
         return redirect(url_for('main.dashboard'))
         
-    df = PayrollAnalyticsEngine.get_payroll_dataframe()
-    if df.empty:
+    # Using God-Level SQL Analytics instead of Pandas
+    prediction = PayrollAnalyticsEngine.predict_next_month_cost()
+    anomalies = PayrollAnalyticsEngine.detect_salary_anomalies()
+    dept_costs = PayrollAnalyticsEngine.get_department_cost_distribution()
+    
+    total_employees = Employee.query.filter_by(is_active=True).count()
+    
+    # Extract latest period metadata
+    from sqlalchemy import text
+    sql = text("SELECT year, month FROM payroll ORDER BY year DESC, month DESC LIMIT 1")
+    latest = db.session.execute(sql).fetchone()
+    
+    if not latest:
         flash("No data available for audit.", "warning")
         return redirect(url_for('main.dashboard'))
-        
-    total_employees = Employee.query.filter_by(is_active=True).count()
-    prediction = PayrollAnalyticsEngine.predict_next_month_cost(df)
-    anomalies = PayrollAnalyticsEngine.detect_salary_anomalies(df)
     
-    # Department breakdown
-    latest_year = df['year'].max()
-    latest_month = df[df['year'] == latest_year]['month'].max()
-    latest_df = df[(df['year'] == latest_year) & (df['month'] == latest_month)]
-    
-    total_latest_cost = float(latest_df['net_salary'].sum())
-    dept_costs = latest_df.groupby('dept_name')['net_salary'].sum().reset_index()
-    dept_labels = dept_costs['dept_name'].tolist()
-    dept_data = [float(x) for x in dept_costs['net_salary'].tolist()]
-    
-    # Trend
-    monthly_costs = df.groupby(['year', 'month'])['net_salary'].sum().reset_index()
-    monthly_costs = monthly_costs.sort_values(by=['year', 'month']).tail(12)
-    trend_labels = [f"{int(m)}/{int(y)}" for m, y in zip(monthly_costs['month'], monthly_costs['year'])]
-    trend_data = [float(x) for x in monthly_costs['net_salary'].tolist()]
+    latest_year, latest_month = latest[0], latest[1]
+    total_latest_cost = sum(dept_costs['data'])
+    dept_breakdown = zip(dept_costs['labels'], dept_costs['data'])
     
     from xhtml2pdf import pisa
     from io import BytesIO
@@ -309,11 +381,8 @@ def generate_company_audit():
                             latest_year=int(latest_year),
                             total_latest_cost=total_latest_cost,
                             prediction=prediction,
-                            dept_labels=dept_labels,
-                            dept_data=dept_data,
-                            anomalies=anomalies,
-                            trend_labels=trend_labels,
-                            trend_data=trend_data)
+                            dept_breakdown=dept_breakdown,
+                            anomalies=anomalies)
                             
     result = BytesIO()
     pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result)

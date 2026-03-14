@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{{ employee.name }}'s Details</h2>
+        <a href="{{ url_for('main.employees') }}" class="btn btn-outline-secondary">Back to Roster</a>
+    </div>
+
+    <div class="row">
+        <!-- Profile Panel -->
+        <div class="col-md-5">
+            <div class="card mb-4 shadow-sm border-0">
+                <div class="card-header bg-dark text-white border-0">
+                    <h5 class="card-title mb-0"><i class="fa-solid fa-address-card me-2"></i>Profile</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Email:</strong> {{ employee.email }}</p>
+                    <p><strong>Department:</strong> <span class="badge bg-secondary">{{ department.dept_name }}</span>
+                    </p>
+                    <p><strong>Role:</strong> {{ employee.designation }}</p>
+                    <p><strong>Base Salary:</strong> <span class="text-success fw-bold">${{
+                            "{:,.2f}".format(employee.base_salary) }}</span></p>
+                </div>
+            </div>
+
+            <!-- Queue Adjustments Panel -->
+            <div class="card mb-4 shadow-sm border-0">
+                <div class="card-header bg-primary text-white border-0">
+                    <h5 class="card-title mb-0"><i class="fa-solid fa-money-check-dollar me-2"></i>Queue Adjustments
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('main.adjust_employee_pay', emp_id=employee.emp_id) }}" method="POST">
+                        <div class="mb-3">
+                            <label class="form-label text-primary fw-bold">Update Base Salary</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" step="0.01" class="form-control" name="new_base_salary"
+                                    value="{{ employee.base_salary }}">
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label text-success fw-bold">Next Bonus</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" step="0.01" class="form-control" name="pending_bonus"
+                                        value="{{ employee.pending_bonus }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-danger fw-bold">Next Deduction</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" step="0.01" class="form-control" name="pending_deduction"
+                                        value="{{ employee.pending_deduction }}">
+                                </div>
+                            </div>
+                        </div>
+                        <p class="small text-muted mb-3"><i class="fa-solid fa-circle-info me-1"></i>Bonus and Deduction
+                            queues apply only to the next payroll run and reset to zero.</p>
+                        <button type="submit" class="btn btn-primary w-100"><i
+                                class="fa-solid fa-floppy-disk me-2"></i>Save Adjustments</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance / Historical Payrolls -->
+        <div class="col-md-7">
+
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card bg-success text-white">
+                        <div class="card-body text-center">
+                            <h6 class="text-uppercase mb-1">YTD Earnings</h6>
+                            <h3 class="mb-0">${{ "{:,.2f}".format(dossier.ytd_salary) }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card bg-info text-white">
+                        <div class="card-body text-center">
+                            <h6 class="text-uppercase mb-1">YTD Bonuses</h6>
+                            <h3 class="mb-0">${{ "{:,.2f}".format(dossier.ytd_bonus) }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="card-title mb-0"><i class="fa-solid fa-clock-rotate-left me-2"></i>Historical Pay Slips
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Period</th>
+                                    <th>Base</th>
+                                    <th>Bonus</th>
+                                    <th>Net Payout</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pr in payrolls %}
+                                <tr>
+                                    <td>{{ pr.month }}/{{ pr.year }}</td>
+                                    <td>${{ "{:,.2f}".format(pr.base_salary) }}</td>
+                                    <td>${{ "{:,.2f}".format(pr.bonus) }}</td>
+                                    <td class="fw-bold">${{ "{:,.2f}".format(pr.net_salary) }}</td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-4 text-muted">No historical payroll runs
+                                        found.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -40,6 +40,10 @@ class Employee(db.Model):
     
     # Base Salary configuration for the employee
     base_salary = db.Column(db.Numeric(10, 2))
+    
+    # Scheduled adjustments (resets to 0 after payroll execution)
+    pending_bonus = db.Column(db.Numeric(10, 2), default=0.0)
+    pending_deduction = db.Column(db.Numeric(10, 2), default=0.0)
 
     # Relationships
     attendance_records = db.relationship('Attendance', backref='employee', lazy='dynamic')

@@ -1,60 +1,54 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">Payroll Approval Inbox</h1>
+<div class="d-flex justify-content-between align-items-center mb-4 pt-3">
+    <h1 class="h2">Approvals Inbox</h1>
+    <div class="badge bg-primary rounded-pill px-3 py-2">{{ batches|length }} Batches Pending</div>
 </div>
 
-<div class="row">
-    <div class="col-md-10 mx-auto">
+<div class="row g-4">
+    {% for batch in batches %}
+    <div class="col-md-6 col-lg-4">
         <div class="card shadow-sm border-0">
-            <div class="card-header bg-warning text-dark fw-bold">
-                <i class="fa-solid fa-inbox me-2"></i> Pending Payroll Batches
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Period</th>
-                                <th>Employees Count</th>
-                                <th>Total Net Payout</th>
-                                <th class="text-end">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for batch in batches %}
-                            <tr>
-                                <td class="fw-bold">{{ batch.month }}/{{ batch.year }}</td>
-                                <td>{{ batch.emp_count }}</td>
-                                <td class="fw-bold text-success">${{ "{:,.2f}".format(batch.total_net) }}</td>
-                                <td class="text-end">
-                                    <form
-                                        action="{{ url_for('main.approval_action', month=batch.month, year=batch.year) }}"
-                                        method="POST" class="d-inline">
-                                        <button type="submit" name="action" value="approve"
-                                            class="btn btn-sm btn-success me-1"><i class="fa-solid fa-check"></i>
-                                            Approve</button>
-                                        <button type="submit" name="action" value="reject"
-                                            class="btn btn-sm btn-danger"><i class="fa-solid fa-xmark"></i>
-                                            Reject</button>
-                                    </form>
-                                </td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="4" class="text-center py-4 text-muted">
-                                    <i class="fa-solid fa-check-circle text-success fs-2 mb-2 d-block"></i>
-                                    You're all caught up! No pending payroll runs.
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between mb-3">
+                    <h5 class="fw-bold mb-0">Period: {{ batch.month }}/{{ batch.year }}</h5>
+                    <span class="badge badge-pending">Pending</span>
+                </div>
+                <div class="row mb-4">
+                    <div class="col-6">
+                        <div class="text-muted small">Employees</div>
+                        <div class="h5 mb-0">{{ batch.emp_count }}</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-muted small">Total Net</div>
+                        <div class="h5 mb-0 text-success">${{ "{:,.2f}".format(batch.total_net) }}</div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <form action="{{ url_for('main.approval_action', month=batch.month, year=batch.year) }}"
+                        method="POST" class="w-50">
+                        <input type="hidden" name="action" value="approve">
+                        <button type="submit" class="btn btn-success w-100 fw-bold">Approve All</button>
+                    </form>
+                    <form action="{{ url_for('main.approval_action', month=batch.month, year=batch.year) }}"
+                        method="POST" class="w-50">
+                        <input type="hidden" name="action" value="reject">
+                        <button type="submit" class="btn btn-outline-danger w-100">Reject</button>
+                    </form>
                 </div>
             </div>
         </div>
     </div>
+    {% else %}
+    <div class="col-12">
+        <div class="card p-5 text-center">
+            <div class="text-muted mb-3"><i class="fa-solid fa-inbox fs-1"></i></div>
+            <h4>Inbox Empty</h4>
+            <p class="text-muted">No payroll batches are currently awaiting approval.</p>
+        </div>
+    </div>
+    {% endfor %}
 </div>
-
 {% endblock %}

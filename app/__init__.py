@@ -40,14 +40,12 @@ def create_app(config_class=Config):
     def run_anomaly_detection_job():
         with app.app_context():
             from app.analytics.engine import PayrollAnalyticsEngine
-            df = PayrollAnalyticsEngine.get_payroll_dataframe()
-            if not df.empty:
-                print("[BACKGROUND JOB] Running automated salary anomaly detection...")
-                anomalies = PayrollAnalyticsEngine.detect_salary_anomalies(df)
-                if anomalies:
-                    print(f"[BACKGROUND JOB] WARNING: {len(anomalies)} anomalies detected!")
-                else:
-                    print("[BACKGROUND JOB] System clear. No anomalies found.")
+            print("[BACKGROUND JOB] Running automated salary anomaly detection (Pure SQL)...")
+            anomalies = PayrollAnalyticsEngine.detect_salary_anomalies()
+            if anomalies:
+                print(f"[BACKGROUND JOB] WARNING: {len(anomalies)} anomalies detected!")
+            else:
+                print("[BACKGROUND JOB] System clear. No anomalies found.")
 
     # Run the job every 24 hours (for demonstration, we will set it to run more frequently or just register it)
     scheduler.add_job(func=run_anomaly_detection_job, trigger="interval", hours=24, id='anomaly_detection_job')

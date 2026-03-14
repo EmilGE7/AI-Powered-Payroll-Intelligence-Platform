@@ -12,6 +12,20 @@ def seed_database():
         # Clear existing
         db.drop_all()
         db.create_all()
+        
+        # Inject the God-Level SQLite Auditing Trigger
+        from sqlalchemy import text
+        trigger_sql = text("""
+        CREATE TRIGGER IF NOT EXISTS audit_high_salary
+        AFTER INSERT ON payroll
+        WHEN NEW.net_salary > 100000 OR NEW.bonus > 50000
+        BEGIN
+            INSERT INTO payroll_audit (payroll_id, emp_id, old_net_salary, new_net_salary, change_time)
+            VALUES (NEW.payroll_id, NEW.emp_id, 0.0, NEW.net_salary, datetime('now'));
+        END;
+        """)
+        db.session.execute(trigger_sql)
+        db.session.commit()
 
         print("Creating admin user...")
         admin = User(username='admin', email='admin@payroll.ai', role='Admin')

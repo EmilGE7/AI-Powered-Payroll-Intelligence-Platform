@@ -1,245 +1,174 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">Enterprise Analytics Dashboard</h1>
-    <div class="btn-toolbar mb-2 mb-md-0">
-        <div class="btn-group me-2">
-            <a href="{{ url_for('main.generate_company_audit') }}" class="btn btn-sm btn-outline-secondary"
-                target="_blank"><i class="fa-solid fa-file-pdf me-1"></i> Export PDF</a>
-            <a href="{{ url_for('main.export_csv') }}" class="btn btn-sm btn-outline-secondary"><i
-                    class="fa-solid fa-file-csv me-1"></i> Export CSV</a>
-        </div>
-    </div>
-</div>
-
-<!-- Top Metrics -->
 <div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <h1 class="h3 fw-bold">Executive Analytics</h1>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('main.generate_company_audit') }}" class="btn btn-sm btn-outline-dark">
+                <i class="fa-solid fa-file-pdf me-1"></i> Audit Report
+            </a>
+            <a href="{{ url_for('main.export_csv') }}" class="btn btn-sm btn-outline-dark">
+                <i class="fa-solid fa-file-csv me-1"></i> Export Data
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Metric Cards -->
+<div class="row g-4 mb-4">
     <div class="col-md-3">
-        <div class="card text-white bg-primary mb-3 shadow-sm h-100">
-            <div class="card-header border-0"><i class="fa-solid fa-users me-2"></i> Active Employees</div>
-            <div class="card-body">
-                <h2 class="card-title">{{ total_employees }}</h2>
-                <p class="card-text small">Total Headcount</p>
-            </div>
+        <div class="card p-3">
+            <div class="text-muted small fw-semibold text-uppercase">Active Workforce</div>
+            <div class="h4 fw-bold mt-1 mb-0">{{ total_employees }}</div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card text-white bg-info mb-3 shadow-sm h-100">
-            <div class="card-header border-0"><i class="fa-solid fa-money-check-dollar me-2"></i> Last Payroll Run</div>
-            <div class="card-body">
-                <h2 class="card-title">{{ payroll_count }}</h2>
-                <p class="card-text small">Employees Processed</p>
-            </div>
+        <div class="card p-3 border-start border-4 border-primary">
+            <div class="text-muted small fw-semibold text-uppercase">Current Payouts</div>
+            <div class="h4 fw-bold mt-1 mb-0">{{ payroll_count }}</div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card text-white bg-success mb-3 shadow-sm h-100">
-            <div class="card-header border-0"><i class="fa-solid fa-robot me-2"></i> AI Cost Prediction</div>
-            <div class="card-body">
-                <h2 class="card-title">${{ "{:,.2f}".format(prediction) }}</h2>
-                <p class="card-text small">Est. Next Month Payroll</p>
-            </div>
+        <div class="card p-3 border-start border-4 border-success">
+            <div class="text-muted small fw-semibold text-uppercase">Next Month Forecast</div>
+            <div class="h4 fw-bold mt-1 mb-0">${{ "{:,.2f}".format(prediction) }}</div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card text-white bg-danger mb-3 shadow-sm h-100">
-            <div class="card-header border-0"><i class="fa-solid fa-triangle-exclamation me-2"></i> Salary Anomalies
+        <div class="card p-3 border-start border-4 border-danger">
+            <div class="text-muted small fw-semibold text-uppercase">Data Outliers Detected</div>
+            <div class="h4 fw-bold mt-1 mb-0 text-danger">{{ anomalies|length }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Main Trend Graph -->
+    <div class="col-lg-8">
+        <div class="card h-100 p-4">
+            <h6 class="fw-bold mb-4">Monthly Expenditure Trend</h6>
+            <div style="height: 300px;">
+                <canvas id="trendChart"></canvas>
             </div>
-            <div class="card-body">
-                <h2 class="card-title">{{ anomalies|length }}</h2>
-                <p class="card-text small">Detect by Std Dev</p>
+        </div>
+    </div>
+    <!-- Department Distribution -->
+    <div class="col-lg-4">
+        <div class="card h-100 p-4">
+            <h6 class="fw-bold mb-4">Cost by Department</h6>
+            <div style="height: 300px;">
+                <canvas id="deptChart"></canvas>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Charts Section -->
-<div class="row mb-4">
-    <!-- Trend Line Chart -->
-    <div class="col-md-8">
-        <div class="card shadow-sm h-100">
-            <div class="card-header bg-white fw-bold">
-                <i class="fa-solid fa-chart-line text-primary me-2"></i> 12-Month Payroll Trend
-            </div>
-            <div class="card-body">
-                <canvas id="trendChart" width="100%" height="40"></canvas>
+<div class="row g-4 mb-4">
+    <!-- Density Heatmap (Scatter) -->
+    <div class="col-lg-8">
+        <div class="card p-4">
+            <h6 class="fw-bold mb-4">Salary Distribution Distribution (Z-Score Evaluation)</h6>
+            <div style="height: 350px;">
+                <canvas id="scatterChart"></canvas>
             </div>
         </div>
     </div>
-
-    <!-- Department Distribution Donut -->
-    <div class="col-md-4">
-        <div class="card shadow-sm h-100">
-            <div class="card-header bg-white fw-bold">
-                <i class="fa-solid fa-chart-pie text-info me-2"></i> Department Cost Distribution
-            </div>
-            <div class="card-body d-flex justify-content-center">
-                <canvas id="deptChart" width="100%" height="100"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <!-- Anomaly Scatter/Heatmap -->
-    <div class="col-md-6 mb-4 mb-md-0">
-        <div class="card shadow-sm h-100 border-warning">
-            <div class="card-header bg-warning text-dark fw-bold">
-                <i class="fa-solid fa-fire me-2"></i> Salary Distribution Heatmap
-            </div>
-            <div class="card-body">
-                <canvas id="heatmapChart" width="100%" height="80"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <!-- Anomaly Table -->
-    <div class="col-md-6">
-        <div class="card shadow-sm border-danger h-100">
-            <div class="card-header bg-danger text-white fw-bold">
-                <i class="fa-solid fa-triangle-exclamation me-2"></i> Detected Critical Anomalies
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover table-striped mb-0" style="font-size: 0.9rem;">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Employee</th>
-                                <th>Dept</th>
-                                <th>Net Salary</th>
-                                <th>Bonus</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for anomaly in anomalies %}
-                            <tr>
-                                <td class="fw-bold">{{ anomaly.employee_name }}</td>
-                                <td><span class="badge bg-secondary">{{ anomaly.department }}</span></td>
-                                <td class="text-danger fw-bold">${{ "{:,.0f}".format(anomaly.net_salary) }}</td>
-                                <td>${{ "{:,.0f}".format(anomaly.bonus) }}</td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="4" class="text-center text-muted py-5">
-                                    <i class="fa-solid fa-check-circle text-success fs-3 mb-2 d-block"></i>
-                                    No statistical anomalies detected.
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+    <!-- Anomaly List -->
+    <div class="col-lg-4">
+        <div class="card p-4 h-100">
+            <h6 class="fw-bold mb-4 text-danger">Anomalies Detected (Pure SQL Z-Score)</h6>
+            <div class="overflow-auto" style="max-height: 350px;">
+                {% for item in anomalies %}
+                <div class="d-flex align-items-center p-2 border-bottom mb-2">
+                    <div class="bg-danger-subtle text-danger rounded-circle p-2 me-3">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold small">{{ item.employee_name }}</div>
+                        <div class="text-muted smaller">Z-Score: {{ "%.2f"|format(item.z_score or 0) }}</div>
+                    </div>
+                    <div class="ms-auto fw-bold small">${{ "{:,.0f}".format(item.net_salary) }}</div>
                 </div>
+                {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="fa-solid fa-check-circle fs-2 mb-2 d-block text-success"></i>
+                    No fiscal outliers detected in the dataset.
+                </div>
+                {% endfor %}
             </div>
         </div>
     </div>
 </div>
 
-{% endblock %}
-
-{% block scripts %}
+<!-- Chart Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        // Parse JSON data passed from Flask
-        const trendDataRaw = '{{ trend|safe }}';
-        const deptDataRaw = '{{ dept_costs|safe }}';
+    const trendData = JSON.parse('{{ trend|safe }}');
+    const deptData = JSON.parse('{{ dept_costs|safe }}');
+    const heatmapData = JSON.parse('{{ heatmap_json|safe }}');
 
-        if (trendDataRaw && trendDataRaw !== 'null') {
-            const trendObj = JSON.parse(trendDataRaw);
+    // Trend Chart
+    new Chart(document.getElementById('trendChart'), {
+        type: 'line',
+        data: {
+            labels: trendData.labels,
+            datasets: [{
+                label: 'Gross Expenditure',
+                data: trendData.values,
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
 
-            const trendCtx = document.getElementById('trendChart').getContext('2d');
-            new Chart(trendCtx, {
-                type: 'line',
-                data: {
-                    labels: trendObj.labels,
-                    datasets: [{
-                        label: 'Total Net Payroll ($)',
-                        data: trendObj.data,
-                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        borderWidth: 3,
-                        tension: 0.3,
-                        fill: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: false, ticks: { callback: function (value) { return '$' + value; } } }
+    // Dept Chart
+    new Chart(document.getElementById('deptChart'), {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(deptData),
+            datasets: [{
+                data: Object.values(deptData),
+                backgroundColor: ['#0f172a', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
+            }]
+        },
+        options: { maintainAspectRatio: false }
+    });
+
+    // Scatter Distribution
+    new Chart(document.getElementById('scatterChart'), {
+        type: 'scatter',
+        data: {
+            datasets: [{
+                label: 'Salary vs Department',
+                data: heatmapData.data,
+                backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                pointRadius: 6
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    type: 'linear',
+                    position: 'bottom',
+                    ticks: {
+                        callback: function (value) { return heatmapData.labels[value] || ''; }
                     }
                 }
-            });
-        }
-
-        if (deptDataRaw && deptDataRaw !== 'null') {
-            const deptObj = JSON.parse(deptDataRaw);
-            const deptCtx = document.getElementById('deptChart').getContext('2d');
-
-            new Chart(deptCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: deptObj.labels,
-                    datasets: [{
-                        data: deptObj.data,
-                        backgroundColor: [
-                            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
-                        ],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'bottom' }
-                    }
-                }
-            });
-        }
-
-        const heatmapRaw = '{{ heatmap_json|safe }}';
-        if (heatmapRaw && heatmapRaw !== 'null' && heatmapRaw !== '{}') {
-            const heatmapObj = JSON.parse(heatmapRaw);
-            const hmCtx = document.getElementById('heatmapChart').getContext('2d');
-
-            new Chart(hmCtx, {
-                type: 'scatter',
-                data: {
-                    datasets: [{
-                        label: 'Employee Salaries',
-                        data: heatmapObj.data,
-                        backgroundColor: 'rgba(255, 99, 132, 0.6)',
-                        borderColor: 'red',
-                        pointRadius: 5,
-                        pointHoverRadius: 8
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: function (ctx) {
-                                    const pt = ctx.raw;
-                                    return `${pt.name} (${pt.dept}) - $${pt.y.toLocaleString()}`;
-                                }
-                            }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function (ctx) {
+                            return ctx.raw.name + ': $' + ctx.raw.y.toLocaleString();
                         }
-                    },
-                    scales: {
-                        x: {
-                            ticks: {
-                                callback: function (val, index) {
-                                    return heatmapObj.labels[index] || '';
-                                }
-                            }
-                        },
-                        y: { title: { display: true, text: 'Net Salary ($)' } }
                     }
                 }
-            });
+            }
         }
     });
 </script>

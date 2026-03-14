@@ -295,6 +295,31 @@ class PayrollAnalyticsEngine:
             'avg_dept_overtime': float(result[7] or 0),
             'bonus_variance': float(result[8] or 0),
             'overtime_variance': float(result[9] or 0),
-            'department': result[10]
+            'department': result[10],
+            'performance_rating': PayrollAnalyticsEngine._calculate_performance_rating(result)
         }
+
+    @staticmethod
+    def _calculate_performance_rating(row):
+        """Pure logic to derive a 0.0-10.0 score from raw SQL results."""
+        ytd_gross = float(row[0] or 0)
+        ytd_bonus = float(row[4] or 0)
+        bonus_variance = float(row[8] or 0)
+        
+        # Base rating 6.0
+        rating = 6.0
+        
+        # Bonus weight (if they get more bonus than dept avg, they are high performers)
+        if bonus_variance > 0:
+            rating += min(2.0, (bonus_variance / 500)) # plus up to 2.0
+        else:
+            rating -= min(2.0, (abs(bonus_variance) / 500)) # minus up to 2.0
+            
+        # Bonus-to-Salary Ratio
+        if ytd_gross > 0:
+            ratio = ytd_bonus / ytd_gross
+            rating += (ratio * 5) # add up to 2.0-3.0 for high bonus earners
+            
+        return round(max(0.0, min(10.0, rating)), 1)
+
 

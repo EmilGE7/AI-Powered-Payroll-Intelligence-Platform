@@ -116,9 +116,13 @@ def export_csv():
 @main_bp.route('/employees')
 @login_required
 def employees():
-    emps = Employee.query.filter_by(is_active=True).all()
+    search_query = request.args.get('q', '')
+    if search_query:
+        emps = Employee.query.filter(Employee.name.ilike(f'%{search_query}%'), Employee.is_active==True).all()
+    else:
+        emps = Employee.query.filter_by(is_active=True).all()
     depts = Department.query.all()
-    return render_template('employees.html', title='Manage Employees', employees=emps, depts=depts)
+    return render_template('employees.html', title='Manage Employees', employees=emps, depts=depts, q=search_query)
 
 @main_bp.route('/employee/<int:emp_id>')
 @login_required

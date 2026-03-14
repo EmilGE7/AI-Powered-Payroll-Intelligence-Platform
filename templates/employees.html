@@ -3,9 +3,18 @@
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">Manage Employees</h1>
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
-        <i class="fa-solid fa-plus me-2"></i>Add Employee
-    </button>
+    <div class="d-flex gap-3">
+        <form action="{{ url_for('main.employees') }}" method="GET" class="d-flex gap-2">
+            <input type="text" name="q" class="form-control" placeholder="Search name..." value="{{ q or '' }}">
+            <button type="submit" class="btn btn-outline-primary"><i class="fa-solid fa-magnifying-glass"></i></button>
+            {% if q %}
+            <a href="{{ url_for('main.employees') }}" class="btn btn-outline-secondary">Clear</a>
+            {% endif %}
+        </form>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
+            <i class="fa-solid fa-plus me-2"></i>Add Employee
+        </button>
+    </div>
 </div>
 
 <div class="card shadow-sm">

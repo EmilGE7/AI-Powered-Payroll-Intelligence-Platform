@@ -10,6 +10,36 @@
     <div class="row">
         <!-- Profile Panel -->
         <div class="col-md-5">
+            <!-- Performance Scorecard -->
+            <div class="card mb-4 shadow-sm border-0">
+                <div class="card-header bg-gradient-dark text-white border-0 d-flex justify-content-between align-items-center"
+                    style="background: linear-gradient(45deg, #1e293b, #334155);">
+                    <h5 class="card-title mb-0"><i class="fa-solid fa-star me-2 text-warning"></i>Performance Review
+                    </h5>
+                    <span class="badge bg-light text-dark fw-bold">{{ dossier.performance_rating }}/10.0</span>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1 small fw-bold">
+                            <span>DBMS Efficiency Rating</span>
+                            <span
+                                class="text-{{ 'success' if dossier.performance_rating >= 7 else 'warning' if dossier.performance_rating >= 4 else 'danger' }}">
+                                {{ 'EXCEPTIONAL' if dossier.performance_rating >= 8 else 'STABLE' if
+                                dossier.performance_rating >= 5 else 'UNDER REVIEW' }}
+                            </span>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar bg-{{ 'success' if dossier.performance_rating >= 7 else 'warning' if dossier.performance_rating >= 4 else 'danger' }}"
+                                role="progressbar" style="width: {{ dossier.performance_rating * 10 }}%"></div>
+                        </div>
+                    </div>
+                    <p class="small text-muted mb-0">
+                        <i class="fa-solid fa-calculator me-1"></i> Based on YTD bonus-to-salary ratio and departmental
+                        variance.
+                    </p>
+                </div>
+            </div>
+
             <div class="card mb-4 shadow-sm border-0">
                 <div class="card-header bg-dark text-white border-0">
                     <h5 class="card-title mb-0"><i class="fa-solid fa-address-card me-2"></i>Profile</h5>

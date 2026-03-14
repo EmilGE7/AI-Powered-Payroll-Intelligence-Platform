@@ -115,7 +115,7 @@
             labels: trendData.labels,
             datasets: [{
                 label: 'Gross Expenditure',
-                data: trendData.values,
+                data: trendData.data,
                 borderColor: '#3b82f6',
                 backgroundColor: 'rgba(59, 130, 246, 0.1)',
                 fill: true,
@@ -129,9 +129,9 @@
     new Chart(document.getElementById('deptChart'), {
         type: 'doughnut',
         data: {
-            labels: Object.keys(deptData),
+            labels: deptData.labels,
             datasets: [{
-                data: Object.values(deptData),
+                data: deptData.data,
                 backgroundColor: ['#0f172a', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
             }]
         },

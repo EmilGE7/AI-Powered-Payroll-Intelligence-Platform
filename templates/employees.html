@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Employee Roster</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <button type="button" class="btn btn-sm btn-primary">
+            <i class="fa-solid fa-user-plus me-1"></i> Add Employee
+        </button>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0 align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Department</th>
+                        <th>Designation</th>
+                        <th>Base Salary (Yr)</th>
+                        <th>Join Date</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for emp in employees %}
+                    <tr>
+                        <td class="text-muted fw-bold">#{{ emp.emp_id }}</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="bg-primary text-white rounded-circle d-flex justify-content-center align-items-center me-3"
+                                    style="width: 35px; height: 35px;">
+                                    {{ emp.name[0] }}
+                                </div>
+                                <div>
+                                    <div class="fw-bold">{{ emp.name }}</div>
+                                    <div class="small text-muted">{{ emp.email }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="badge bg-info text-dark">{{ emp.department.dept_name }}</span></td>
+                        <td>{{ emp.designation }}</td>
+                        <td class="fw-bold text-success">${{ "{:,.2f}".format(emp.base_salary) }}</td>
+                        <td class="text-muted">{{ emp.join_date.strftime('%Y-%m-%d') }}</td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-outline-secondary me-1"><i
+                                    class="fa-solid fa-pen"></i></button>
+                            <button class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">No employees found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

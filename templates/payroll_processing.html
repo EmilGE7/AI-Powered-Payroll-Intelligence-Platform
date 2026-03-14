@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Automated Payroll Engine</h1>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-primary mb-4">
+            <div class="card-header bg-primary text-white fw-bold">
+                <i class="fa-solid fa-play me-2"></i> Trigger Monthly Processing
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Initiating this action will calculate the base salary, overtime, taxes, and final
+                    net pay for all active employees for the current month. Anomaly detection will run automatically.
+                </p>
+
+                <form action="#" method="POST">
+                    <div class="row mb-3">
+                        <div class="col">
+                            <label class="form-label fw-bold small text-secondary">MONTH</label>
+                            <select class="form-select" name="month">
+                                <option value="3" selected>March</option>
+                                <option value="4">April</option>
+                                <option value="5">May</option>
+                            </select>
+                        </div>
+                        <div class="col">
+                            <label class="form-label fw-bold small text-secondary">YEAR</label>
+                            <input type="number" class="form-control" name="year" value="2026" readonly>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 fw-bold">
+                        <i class="fa-solid fa-gears me-2"></i> Execute Payroll Run
+                    </button>
+                    <small class="d-block text-center mt-2 text-muted">This process may take a few moments for >1000
+                        employees.</small>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100 border-success mb-4">
+            <div class="card-header bg-success text-white fw-bold">
+                <i class="fa-solid fa-file-invoice-dollar me-2"></i> Latest Processed Run
+            </div>
+            <div class="card-body text-center d-flex flex-column justify-content-center">
+                <h1 class="display-4 fw-bold text-success mb-0">FEB 2026</h1>
+                <p class="text-muted mb-4">Status: <span class="badge bg-success">Completed Successfully</span></p>
+
+                <div class="row">
+                    <div class="col-6 border-end">
+                        <h3 class="fw-bold mb-0">100</h3>
+                        <small class="text-muted text-uppercase">Processed Slips</small>
+                    </div>
+                    <div class="col-6">
+                        <h3 class="fw-bold mb-0 text-success">$281K</h3>
+                        <small class="text-muted text-uppercase">Total Disbursed</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-light fw-bold">
+        <i class="fa-solid fa-list me-2"></i> Recent Processing Logs
+    </div>
+    <div class="card-body p-0">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="fa-solid fa-check-circle text-success me-2"></i>
+                    <strong>Feb 2026 Run</strong> completed by System_Admin
+                </div>
+                <span class="text-muted small">14 Days Ago</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="fa-solid fa-check-circle text-success me-2"></i>
+                    <strong>Jan 2026 Run</strong> completed by System_Admin
+                </div>
+                <span class="text-muted small">45 Days Ago</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="fa-solid fa-triangle-exclamation text-warning me-2"></i>
+                    <strong>Dec 2025 Run</strong> completed by HR_Manager (3 Anomalies Detected)
+                </div>
+                <span class="text-muted small">76 Days Ago</span>
+            </li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

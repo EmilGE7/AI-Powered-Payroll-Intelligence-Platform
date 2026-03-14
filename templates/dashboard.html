@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Enterprise Analytics Dashboard</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary">Export PDF</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary">Export CSV</button>
+        </div>
+    </div>
+</div>
+
+<!-- Top Metrics -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary mb-3 shadow-sm h-100">
+            <div class="card-header border-0"><i class="fa-solid fa-users me-2"></i> Active Employees</div>
+            <div class="card-body">
+                <h2 class="card-title">{{ total_employees }}</h2>
+                <p class="card-text small">Total Headcount</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info mb-3 shadow-sm h-100">
+            <div class="card-header border-0"><i class="fa-solid fa-money-check-dollar me-2"></i> Last Payroll Run</div>
+            <div class="card-body">
+                <h2 class="card-title">{{ payroll_count }}</h2>
+                <p class="card-text small">Employees Processed</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success mb-3 shadow-sm h-100">
+            <div class="card-header border-0"><i class="fa-solid fa-robot me-2"></i> AI Cost Prediction</div>
+            <div class="card-body">
+                <h2 class="card-title">${{ "{:,.2f}".format(prediction) }}</h2>
+                <p class="card-text small">Est. Next Month Payroll</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-danger mb-3 shadow-sm h-100">
+            <div class="card-header border-0"><i class="fa-solid fa-triangle-exclamation me-2"></i> Salary Anomalies
+            </div>
+            <div class="card-body">
+                <h2 class="card-title">{{ anomalies|length }}</h2>
+                <p class="card-text small">Detect by Std Dev</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Section -->
+<div class="row mb-4">
+    <!-- Trend Line Chart -->
+    <div class="col-md-8">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white fw-bold">
+                <i class="fa-solid fa-chart-line text-primary me-2"></i> 12-Month Payroll Trend
+            </div>
+            <div class="card-body">
+                <canvas id="trendChart" width="100%" height="40"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Department Distribution Donut -->
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white fw-bold">
+                <i class="fa-solid fa-chart-pie text-info me-2"></i> Department Cost Distribution
+            </div>
+            <div class="card-body d-flex justify-content-center">
+                <canvas id="deptChart" width="100%" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Anomaly Detection Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm border-danger">
+            <div class="card-header bg-danger text-white fw-bold">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i> Detected Critical Anomalies
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Employee</th>
+                                <th>Department</th>
+                                <th>Month/Year</th>
+                                <th>Net Salary</th>
+                                <th>Bonus</th>
+                                <th>Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for anomaly in anomalies %}
+                            <tr>
+                                <td class="fw-bold">{{ anomaly.employee_name }}</td>
+                                <td><span class="badge bg-secondary">{{ anomaly.department }}</span></td>
+                                <td>{{ anomaly.date }}</td>
+                                <td class="text-danger fw-bold">${{ "{:,.2f}".format(anomaly.net_salary) }}</td>
+                                <td>${{ "{:,.2f}".format(anomaly.bonus) }}</td>
+                                <td><i class="fa-solid fa-circle-exclamation text-warning me-1"></i> {{ anomaly.reason
+                                    }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">
+                                    <i class="fa-solid fa-check-circle text-success fs-4 mb-2 d-block"></i>
+                                    No statistical anomalies detected in the latest payroll run.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Parse JSON data passed from Flask
+        const trendDataRaw = '{{ trend|safe }}';
+        const deptDataRaw = '{{ dept_costs|safe }}';
+
+        if (trendDataRaw && trendDataRaw !== 'null') {
+            const trendObj = JSON.parse(trendDataRaw);
+
+            const trendCtx = document.getElementById('trendChart').getContext('2d');
+            new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: trendObj.labels,
+                    datasets: [{
+                        label: 'Total Net Payroll ($)',
+                        data: trendObj.data,
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 3,
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: false, ticks: { callback: function (value) { return '$' + value; } } }
+                    }
+                }
+            });
+        }
+
+        if (deptDataRaw && deptDataRaw !== 'null') {
+            const deptObj = JSON.parse(deptDataRaw);
+            const deptCtx = document.getElementById('deptChart').getContext('2d');
+
+            new Chart(deptCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: deptObj.labels,
+                    datasets: [{
+                        data: deptObj.data,
+                        backgroundColor: [
+                            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

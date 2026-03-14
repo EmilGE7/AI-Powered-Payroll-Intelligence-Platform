@@ -21,6 +21,7 @@ class PayrollAnalyticsEngine:
             Payroll.deductions,
             Payroll.net_salary,
             Employee.department_id,
+            Employee.name.label('employee_name'),
             Department.dept_name
         ).join(Employee, Payroll.emp_id == Employee.emp_id)\
          .join(Department, Employee.department_id == Department.dept_id)
@@ -65,30 +66,32 @@ class PayrollAnalyticsEngine:
     @staticmethod
     def predict_next_month_cost(df):
         """
-        Uses Simple Linear Regression to predict the next month's total company payroll cost.
+        Uses Random Forest Regression to predict the next month's total company payroll cost.
+        Provides much better handling of non-linear seasonal variations (bonuses).
         """
         if df.empty:
             return 0.0
 
         # Group total cost by month and year
-        # Create a time index for regression (e.g., month 1, month 2... month n)
         monthly_costs = df.groupby(['year', 'month'])['net_salary'].sum().reset_index()
         monthly_costs = monthly_costs.sort_values(by=['year', 'month'])
         
-        # Create a sequential time feature (X)
+        # Create a sequential time feature (X) and month-of-year feature for seasonality
         monthly_costs['time_index'] = np.arange(len(monthly_costs))
         
-        X = monthly_costs[['time_index']].values
+        X = monthly_costs[['time_index', 'month']].values
         y = monthly_costs['net_salary'].values
 
         if len(X) < 2:
             return y[0] if len(y) > 0 else 0.0 # Not enough data to predict
 
-        model = LinearRegression()
+        from sklearn.ensemble import RandomForestRegressor
+        model = RandomForestRegressor(n_estimators=100, random_state=42)
         model.fit(X, y)
 
         # Predict the next month (index = max + 1)
-        next_index = np.array([[len(monthly_costs)]])
+        next_month = (int(monthly_costs['month'].iloc[-1]) % 12) + 1
+        next_index = np.array([[len(monthly_costs), next_month]])
         prediction = model.predict(next_index)[0]
         
         return round(float(prediction), 2)
@@ -127,4 +130,59 @@ class PayrollAnalyticsEngine:
         return {
             'labels': labels,
             'data': data
+        }
+
+    @staticmethod
+    def generate_employee_dossier(emp_id):
+        """
+        Calculates complex God-Level metrics for an individual employee versus their peers.
+        Includes YTD aggregates and department percentile performance data.
+        """
+        # 1. Fetch the overall payroll dataframe
+        df = PayrollAnalyticsEngine.get_payroll_dataframe()
+        if df.empty:
+            return None
+        
+        # 2. Extract employee specific data
+        emp_df = df[df['emp_id'] == emp_id]
+        if emp_df.empty:
+            return None
+            
+        latest_record = emp_df.sort_values(by=['year', 'month'], ascending=[False, False]).iloc[0]
+        dept_name = latest_record['dept_name']
+        
+        # Calculate YTD aggregates (Assuming current year based on latest record)
+        current_year = latest_record['year']
+        ytd_df = emp_df[emp_df['year'] == current_year]
+        
+        ytd_gross = ytd_df['base_salary'].sum() + ytd_df['bonus'].sum() + ytd_df['overtime_pay'].sum()
+        ytd_net = ytd_df['net_salary'].sum()
+        ytd_tax = ytd_df['tax'].sum()
+        ytd_deductions = ytd_df['deductions'].sum()
+        
+        # 3. Calculate Department Comparisons (for the current year context)
+        dept_df = df[(df['dept_name'] == dept_name) & (df['year'] == current_year)]
+        
+        avg_dept_bonus = dept_df['bonus'].mean()
+        avg_dept_overtime = dept_df['overtime_pay'].mean()
+        
+        emp_total_bonus = ytd_df['bonus'].sum()
+        emp_total_overtime = ytd_df['overtime_pay'].sum()
+        
+        bonus_variance = emp_total_bonus - avg_dept_bonus
+        overtime_variance = emp_total_overtime - avg_dept_overtime
+        
+        # Return structured dossier data
+        return {
+            'ytd_gross': float(ytd_gross),
+            'ytd_net': float(ytd_net),
+            'ytd_tax': float(ytd_tax),
+            'ytd_deductions': float(ytd_deductions),
+            'avg_dept_bonus': float(avg_dept_bonus),
+            'avg_dept_overtime': float(avg_dept_overtime),
+            'emp_total_bonus': float(emp_total_bonus),
+            'emp_total_overtime': float(emp_total_overtime),
+            'bonus_variance': float(bonus_variance),
+            'overtime_variance': float(overtime_variance),
+            'department': dept_name
         }

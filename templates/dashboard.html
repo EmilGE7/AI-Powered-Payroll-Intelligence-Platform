@@ -5,8 +5,10 @@
     <h1 class="h2">Enterprise Analytics Dashboard</h1>
     <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2">
-            <button type="button" class="btn btn-sm btn-outline-secondary">Export PDF</button>
-            <button type="button" class="btn btn-sm btn-outline-secondary">Export CSV</button>
+            <a href="{{ url_for('main.generate_company_audit') }}" class="btn btn-sm btn-outline-secondary"
+                target="_blank"><i class="fa-solid fa-file-pdf me-1"></i> Export PDF</a>
+            <a href="{{ url_for('main.export_csv') }}" class="btn btn-sm btn-outline-secondary"><i
+                    class="fa-solid fa-file-csv me-1"></i> Export CSV</a>
         </div>
     </div>
 </div>
@@ -79,24 +81,34 @@
     </div>
 </div>
 
-<!-- Anomaly Detection Table -->
 <div class="row">
-    <div class="col-12">
-        <div class="card shadow-sm border-danger">
+    <!-- Anomaly Scatter/Heatmap -->
+    <div class="col-md-6 mb-4 mb-md-0">
+        <div class="card shadow-sm h-100 border-warning">
+            <div class="card-header bg-warning text-dark fw-bold">
+                <i class="fa-solid fa-fire me-2"></i> Salary Distribution Heatmap
+            </div>
+            <div class="card-body">
+                <canvas id="heatmapChart" width="100%" height="80"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Anomaly Table -->
+    <div class="col-md-6">
+        <div class="card shadow-sm border-danger h-100">
             <div class="card-header bg-danger text-white fw-bold">
                 <i class="fa-solid fa-triangle-exclamation me-2"></i> Detected Critical Anomalies
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover table-striped mb-0">
+                    <table class="table table-hover table-striped mb-0" style="font-size: 0.9rem;">
                         <thead class="table-light">
                             <tr>
                                 <th>Employee</th>
-                                <th>Department</th>
-                                <th>Month/Year</th>
+                                <th>Dept</th>
                                 <th>Net Salary</th>
                                 <th>Bonus</th>
-                                <th>Reason</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -104,17 +116,14 @@
                             <tr>
                                 <td class="fw-bold">{{ anomaly.employee_name }}</td>
                                 <td><span class="badge bg-secondary">{{ anomaly.department }}</span></td>
-                                <td>{{ anomaly.date }}</td>
-                                <td class="text-danger fw-bold">${{ "{:,.2f}".format(anomaly.net_salary) }}</td>
-                                <td>${{ "{:,.2f}".format(anomaly.bonus) }}</td>
-                                <td><i class="fa-solid fa-circle-exclamation text-warning me-1"></i> {{ anomaly.reason
-                                    }}</td>
+                                <td class="text-danger fw-bold">${{ "{:,.0f}".format(anomaly.net_salary) }}</td>
+                                <td>${{ "{:,.0f}".format(anomaly.bonus) }}</td>
                             </tr>
                             {% else %}
                             <tr>
-                                <td colspan="6" class="text-center text-muted py-4">
-                                    <i class="fa-solid fa-check-circle text-success fs-4 mb-2 d-block"></i>
-                                    No statistical anomalies detected in the latest payroll run.
+                                <td colspan="4" class="text-center text-muted py-5">
+                                    <i class="fa-solid fa-check-circle text-success fs-3 mb-2 d-block"></i>
+                                    No statistical anomalies detected.
                                 </td>
                             </tr>
                             {% endfor %}
@@ -184,6 +193,50 @@
                     maintainAspectRatio: false,
                     plugins: {
                         legend: { position: 'bottom' }
+                    }
+                }
+            });
+        }
+
+        const heatmapRaw = '{{ heatmap_json|safe }}';
+        if (heatmapRaw && heatmapRaw !== 'null' && heatmapRaw !== '{}') {
+            const heatmapObj = JSON.parse(heatmapRaw);
+            const hmCtx = document.getElementById('heatmapChart').getContext('2d');
+
+            new Chart(hmCtx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Employee Salaries',
+                        data: heatmapObj.data,
+                        backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                        borderColor: 'red',
+                        pointRadius: 5,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function (ctx) {
+                                    const pt = ctx.raw;
+                                    return `${pt.name} (${pt.dept}) - $${pt.y.toLocaleString()}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                callback: function (val, index) {
+                                    return heatmapObj.labels[index] || '';
+                                }
+                            }
+                        },
+                        y: { title: { display: true, text: 'Net Salary ($)' } }
                     }
                 }
             });

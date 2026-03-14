@@ -42,6 +42,14 @@ def seed_database():
                 base_salary=round(random.uniform(40000, 150000), 2)
             )
             db.session.add(emp)
+            db.session.flush() # Get the auto-increment emp_id
+            
+            # Create user account
+            username = emp.email.split('@')[0]
+            user_acct = User(username=username, email=emp.email, role='Employee', emp_id=emp.emp_id)
+            user_acct.set_password('password123')
+            db.session.add(user_acct)
+            
             employees.append(emp)
         
         db.session.commit()
@@ -106,7 +114,8 @@ def seed_database():
                     overtime_pay=round(overtime_pay, 2),
                     tax=round(tax, 2),
                     deductions=round(deductions, 2),
-                    net_salary=round(net, 2)
+                    net_salary=round(net, 2),
+                    status='Approved'
                 )
                 db.session.add(payroll)
 

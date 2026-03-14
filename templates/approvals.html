@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Payroll Approval Inbox</h1>
+</div>
+
+<div class="row">
+    <div class="col-md-10 mx-auto">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-warning text-dark fw-bold">
+                <i class="fa-solid fa-inbox me-2"></i> Pending Payroll Batches
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Period</th>
+                                <th>Employees Count</th>
+                                <th>Total Net Payout</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for batch in batches %}
+                            <tr>
+                                <td class="fw-bold">{{ batch.month }}/{{ batch.year }}</td>
+                                <td>{{ batch.emp_count }}</td>
+                                <td class="fw-bold text-success">${{ "{:,.2f}".format(batch.total_net) }}</td>
+                                <td class="text-end">
+                                    <form
+                                        action="{{ url_for('main.approval_action', month=batch.month, year=batch.year) }}"
+                                        method="POST" class="d-inline">
+                                        <button type="submit" name="action" value="approve"
+                                            class="btn btn-sm btn-success me-1"><i class="fa-solid fa-check"></i>
+                                            Approve</button>
+                                        <button type="submit" name="action" value="reject"
+                                            class="btn btn-sm btn-danger"><i class="fa-solid fa-xmark"></i>
+                                            Reject</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted">
+                                    <i class="fa-solid fa-check-circle text-success fs-2 mb-2 d-block"></i>
+                                    You're all caught up! No pending payroll runs.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

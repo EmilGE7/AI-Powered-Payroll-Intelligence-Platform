@@ -20,7 +20,10 @@ def login():
         login_user(user, remember=request.form.get('remember_me'))
         next_page = request.args.get('next')
         if not next_page or urlparse(next_page).netloc != '':
-            next_page = url_for('main.dashboard')
+            if user.role == 'Employee':
+                next_page = url_for('main.employee_portal')
+            else:
+                next_page = url_for('main.dashboard')
         return redirect(next_page)
 
         

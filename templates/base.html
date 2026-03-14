@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,37 +14,53 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+
 <body class="bg-light">
-    
+
     {% if current_user.is_authenticated %}
     <div class="container-fluid">
         <div class="row">
             <!-- Sidebar -->
-            <nav id="sidebar" class="col-md-3 col-lg-2 d-md-block bg-dark sidebar collapse min-vh-100 flex-column align-items-stretch">
+            <nav id="sidebar"
+                class="col-md-3 col-lg-2 d-md-block bg-dark sidebar collapse min-vh-100 flex-column align-items-stretch">
                 <div class="position-sticky pt-3">
                     <h5 class="text-white text-center py-3 border-bottom border-secondary">
                         <i class="fa-solid fa-brain text-primary me-2"></i>AI Payroll
                     </h5>
                     <ul class="nav flex-column mb-auto">
                         <li class="nav-item">
-                            <a class="nav-link text-white {{ 'active text-primary' if title == 'Analytics Dashboard' }}" href="{{ url_for('main.dashboard') }}">
+                            <a class="nav-link text-white {{ 'active text-primary' if title == 'Analytics Dashboard' }}"
+                                href="{{ url_for('main.dashboard') }}">
                                 <i class="fa-solid fa-chart-line me-2"></i> Dashboard
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-white {{ 'active text-primary' if title == 'Manage Employees' }}" href="{{ url_for('main.employees') }}">
+                            <a class="nav-link text-white {{ 'active text-primary' if title == 'Manage Employees' }}"
+                                href="{{ url_for('main.employees') }}">
                                 <i class="fa-solid fa-users me-2"></i> Employees
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-white {{ 'active text-primary' if title == 'Process Payroll' }}" href="{{ url_for('main.payroll_processing') }}">
+                            <a class="nav-link text-white {{ 'active text-primary' if 'Process Payroll' in title }}"
+                                href="{{ url_for('main.payroll_processing') }}">
                                 <i class="fa-solid fa-money-check-dollar me-2"></i> Payroll Engine
                             </a>
                         </li>
+
+                        {% if current_user.role in ['Admin', 'Finance', 'HR'] %}
+                        <li class="nav-item mt-2">
+                            <small class="text-secondary text-uppercase fw-bold px-3">Enterprise Approvals</small>
+                            <a class="nav-link text-white {{ 'active text-warning' if title == 'Payroll Approvals' }}"
+                                href="{{ url_for('main.approvals') }}">
+                                <i class="fa-solid fa-inbox text-warning me-2"></i> Approvals Inbox
+                            </a>
+                        </li>
+                        {% endif %}
                     </ul>
                     <hr class="border-secondary mt-auto mb-2">
                     <div class="dropdown p-3 mt-auto">
-                        <a href="{{ url_for('auth.logout') }}" class="d-flex align-items-center text-white text-decoration-none">
+                        <a href="{{ url_for('auth.logout') }}"
+                            class="d-flex align-items-center text-white text-decoration-none">
                             <i class="fa-solid fa-right-from-bracket me-2"></i> Logout
                         </a>
                     </div>
@@ -55,41 +72,42 @@
                 <div class="container">
                     {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
-                        {% for category, message in messages %}
-                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                        {% endfor %}
+                    {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endfor %}
                     {% endif %}
                     {% endwith %}
-                    
+
                     {% block content %}{% endblock %}
                 </div>
             </main>
         </div>
     </div>
     {% else %}
-        <!-- For Login Page -->
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <div class="container mt-3">
-            {% for category, message in messages %}
-            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-            {% endfor %}
-            </div>
-        {% endif %}
-        {% endwith %}
-        {% block login_content %}{% endblock %}
+    <!-- For Login Page -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="container mt-3">
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+    {% block login_content %}{% endblock %}
     {% endif %}
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <!-- Custom JS Script injection -->
     {% block scripts %}{% endblock %}
 </body>
+
 </html>

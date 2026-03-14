@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">My Employee Portal</h1>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100 border-primary">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <span><i class="fa-solid fa-address-card me-2"></i> Employee Profile</span>
+                <a href="{{ url_for('main.generate_employee_report', emp_id=employee.emp_id) }}"
+                    class="btn btn-sm btn-light text-primary fw-bold" target="_blank">
+                    <i class="fa-solid fa-file-pdf me-1"></i> God-Level Dossier
+                </a>
+            </div>
+            <div class="card-body">
+                <h4 class="card-title">{{ employee.name }}</h4>
+                <p class="text-muted mb-1">{{ employee.designation }}</p>
+                <p class="text-muted"><span class="badge bg-info text-dark">{{ employee.department.dept_name }}</span>
+                </p>
+
+                <hr>
+                <p class="mb-1"><i class="fa-regular fa-envelope me-2 text-muted"></i> {{ employee.email }}</p>
+                <p class="mb-1"><i class="fa-regular fa-calendar me-2 text-muted"></i> Joined: {{
+                    employee.join_date.strftime('%Y-%m-%d') }}</p>
+                <p class="mb-0"><i class="fa-solid fa-money-bill-wave me-2 text-muted"></i> Base Salary: <span
+                        class="fw-bold text-success">${{ "{:,.2f}".format(employee.base_salary) }} / yr</span></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary of Latest Pay -->
+    <div class="col-md-8">
+        <div class="card shadow-sm h-100 border-success">
+            <div class="card-header bg-success text-white"><i class="fa-solid fa-money-check-dollar me-2"></i> Latest
+                Payroll ({{ payrolls[0].month }}/{{ payrolls[0].year }})</div>
+            <div class="card-body text-center d-flex flex-column justify-content-center">
+                {% if payrolls %}
+                <h1 class="display-4 fw-bold text-success">${{ "{:,.2f}".format(payrolls[0].net_salary) }}</h1>
+                <p class="text-muted text-uppercase mb-4">Net Take-Home Pay</p>
+
+                <div class="row">
+                    <div class="col-4 border-end">
+                        <h4 class="mb-0 text-primary">${{ "{:,.2f}".format(payrolls[0].base_salary) }}</h4>
+                        <small class="text-muted">Base Pay</small>
+                    </div>
+                    <div class="col-4 border-end">
+                        <h4 class="mb-0 text-info">${{ "{:,.2f}".format(payrolls[0].bonus + payrolls[0].overtime_pay) }}
+                        </h4>
+                        <small class="text-muted">Extra (Bonus/OT)</small>
+                    </div>
+                    <div class="col-4">
+                        <h4 class="mb-0 text-danger">${{ "{:,.2f}".format(payrolls[0].tax + payrolls[0].deductions) }}
+                        </h4>
+                        <small class="text-muted">Deductions/Tax</small>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-muted">No payroll data available yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- History Tables -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-light fw-bold"><i class="fa-regular fa-calendar-check me-2"></i> Attendance
+                Record</div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 small">
+                        <thead class="table-secondary">
+                            <tr>
+                                <th>Period</th>
+                                <th>Working Days</th>
+                                <th>Leave Days</th>
+                                <th>Overtime (Hr)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for att in attendance %}
+                            <tr>
+                                <td>{{ att.month }}/{{ att.year }}</td>
+                                <td>{{ att.working_days }}</td>
+                                <td class="{{ 'text-danger fw-bold' if att.leave_days > 0 else '' }}">{{ att.leave_days
+                                    }}</td>
+                                <td class="{{ 'text-success fw-bold' if att.overtime_hours > 0 else '' }}">{{
+                                    att.overtime_hours }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">No records.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 mt-3 mt-md-0">
+            <div class="card-header bg-light fw-bold"><i class="fa-solid fa-list me-2"></i> Payroll History</div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 small">
+                        <thead class="table-secondary">
+                            <tr>
+                                <th>Period</th>
+                                <th>Total Gross</th>
+                                <th>Deductions</th>
+                                <th>Net Pay</th>
+                                <th>Payslip</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pr in payrolls %}
+                            <tr>
+                                <td>{{ pr.month }}/{{ pr.year }}</td>
+                                <td>${{ "{:,.2f}".format(pr.base_salary + pr.bonus + pr.overtime_pay) }}</td>
+                                <td class="text-danger">${{ "{:,.2f}".format(pr.tax + pr.deductions) }}</td>
+                                <td class="fw-bold text-success">${{ "{:,.2f}".format(pr.net_salary) }}</td>
+                                <td><a href="{{ url_for('main.generate_payslip', payroll_id=pr.payroll_id) }}"
+                                        class="btn btn-sm btn-outline-primary py-0" style="font-size: 0.75rem;"
+                                        target="_blank"><i class="fa-solid fa-download"></i> PDF</a></td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">No records.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

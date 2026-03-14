@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Company Audit Report</title>
+    <style>
+        @page {
+            size: a4 portrait;
+            margin: 1.5cm;
+        }
+
+        body {
+            font-family: "Helvetica", sans-serif;
+            color: #333;
+            line-height: 1.4;
+            font-size: 9pt;
+        }
+
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #0056b3;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .title {
+            color: #0056b3;
+            font-size: 18pt;
+            font-weight: bold;
+        }
+
+        .subtitle {
+            font-size: 10pt;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .summary-box {
+            border: 1px solid #ddd;
+            background-color: #f8f9fa;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .summary-table td {
+            width: 25%;
+            text-align: center;
+        }
+
+        .summary-table .metric {
+            font-size: 14pt;
+            font-weight: bold;
+            color: #0056b3;
+        }
+
+        .summary-table .label {
+            color: #666;
+            font-size: 8pt;
+            text-transform: uppercase;
+        }
+
+        .section-title {
+            font-size: 12pt;
+            color: #333;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 3px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 6px;
+            border: 1px solid #ddd;
+        }
+
+        .data-table th {
+            background-color: #efefef;
+            text-align: left;
+        }
+
+        .data-table td.num {
+            text-align: right;
+        }
+
+        .highlight {
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <div class="title">Enterprise Company Payroll Audit</div>
+        <div class="subtitle">Generated on {{ date }} &bull; Confidential</div>
+    </div>
+
+    <div class="summary-box">
+        <table class="summary-table">
+            <tr>
+                <td>
+                    <div class="metric">{{ total_employees }}</div>
+                    <div class="label">Total Active Employees</div>
+                </td>
+                <td>
+                    <div class="metric">{{ latest_month }}/{{ latest_year }}</div>
+                    <div class="label">Latest Processed Month</div>
+                </td>
+                <td>
+                    <div class="metric">${{ "{:,.2f}".format(total_latest_cost) }}</div>
+                    <div class="label">Latest Run Disbursed</div>
+                </td>
+                <td>
+                    <div class="metric">${{ "{:,.2f}".format(prediction) }}</div>
+                    <div class="label">Predicted Next Month</div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section-title">Department Cost Breakdown (Latest Run)</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Department</th>
+                <th style="text-align: right;">Total Net Salary</th>
+                <th>% of Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for i in range(dept_labels|length) %}
+            <tr>
+                <td>{{ dept_labels[i] }}</td>
+                <td class="num">${{ "{:,.2f}".format(dept_data[i]) }}</td>
+                <td class="num">{{ "{:.1f}".format((dept_data[i] / total_latest_cost) * 100) if total_latest_cost else 0
+                    }}%</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td class="highlight">Total</td>
+                <td class="num highlight">${{ "{:,.2f}".format(total_latest_cost) }}</td>
+                <td class="num highlight">100.0%</td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <div class="section-title">Critical Salary Anomalies (Latest Run)</div>
+    {% if anomalies %}
+    <table class="data-table" style="font-size: 8pt;">
+        <thead>
+            <tr>
+                <th>Employee</th>
+                <th>Department</th>
+                <th>Net Salary</th>
+                <th>Bonus</th>
+                <th>Reason</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for anomaly in anomalies %}
+            <tr>
+                <td class="highlight">{{ anomaly.employee_name }}</td>
+                <td>{{ anomaly.department }}</td>
+                <td class="num highlight" style="color: #dc3545;">${{ "{:,.2f}".format(anomaly.net_salary) }}</td>
+                <td class="num">${{ "{:,.2f}".format(anomaly.bonus) }}</td>
+                <td>{{ anomaly.reason }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: #28a745; font-style: italic;">No critical statistical anomalies detected in the latest run.</p>
+    {% endif %}
+
+    <div class="section-title">Historical Payroll Trend (Last 12 Periods)</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Period</th>
+                <th style="text-align: right;">Total Net Payroll</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for i in range(trend_labels|length) %}
+            <tr>
+                <td>{{ trend_labels[i] }}</td>
+                <td class="num">${{ "{:,.2f}".format(trend_data[i]) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</body>
+
+</html>

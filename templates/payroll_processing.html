@@ -16,7 +16,7 @@
                     net pay for all active employees for the current month. Anomaly detection will run automatically.
                 </p>
 
-                <form action="#" method="POST">
+                <form action="{{ url_for('main.trigger_payroll') }}" method="POST">
                     <div class="row mb-3">
                         <div class="col">
                             <label class="form-label fw-bold small text-secondary">MONTH</label>

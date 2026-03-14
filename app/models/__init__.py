@@ -9,7 +9,10 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(64), index=True, unique=True)
     email = db.Column(db.String(120), index=True, unique=True)
     password_hash = db.Column(db.String(256))
-    role = db.Column(db.String(20), default='HR') # Admin, HR, Finance
+    role = db.Column(db.String(20), default='HR') # Admin, HR, Finance, Employee
+    emp_id = db.Column(db.Integer, db.ForeignKey('employees.emp_id'), nullable=True)
+
+    employee = db.relationship('Employee', backref='user_account', uselist=False)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -58,6 +61,7 @@ class Payroll(db.Model):
     emp_id = db.Column(db.Integer, db.ForeignKey('employees.emp_id'))
     month = db.Column(db.Integer)
     year = db.Column(db.Integer)
+    status = db.Column(db.String(20), default='Pending') # Pending, Approved, Rejected
     
     # Financials
     base_salary = db.Column(db.Numeric(10, 2))
